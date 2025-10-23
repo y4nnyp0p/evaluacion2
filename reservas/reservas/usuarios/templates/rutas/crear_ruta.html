@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}{% if modo_edicion %}Editar ruta{% else %}Crear ruta{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="card-lift">
+      <h2 class="mb-3">{% if modo_edicion %}Editar ruta{% else %}Registrar nueva ruta{% endif %}</h2>
+      <p class="text-muted">
+        Define origen, destino, fecha, hora de salida y tarifa para la ruta seleccionada.
+      </p>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">{{ form.non_field_errors.0 }}</div>
+        {% endif %}
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Origen</label>
+            {{ form.origen }}
+            {% if form.origen.errors %}
+              <div class="invalid-feedback d-block">{{ form.origen.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Destino</label>
+            {{ form.destino }}
+            {% if form.destino.errors %}
+              <div class="invalid-feedback d-block">{{ form.destino.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Fecha</label>
+            {{ form.fecha }}
+            {% if form.fecha.errors %}
+              <div class="invalid-feedback d-block">{{ form.fecha.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Hora de salida</label>
+            {{ form.hora_salida }}
+            {% if form.hora_salida.errors %}
+              <div class="invalid-feedback d-block">{{ form.hora_salida.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Precio (CLP)</label>
+            {{ form.precio }}
+            {% if form.precio.errors %}
+              <div class="invalid-feedback d-block">{{ form.precio.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between mt-4">
+          <a href="{% url 'listar_rutas' %}" class="btn btn-outline-secondary">Cancelar</a>
+          <button type="submit" class="btn btn-primary">
+            {% if modo_edicion %}Guardar cambios{% else %}Crear ruta{% endif %}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

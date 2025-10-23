@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+{% block title %}Reservar ruta{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css">
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="card-lift">
+      <h2 class="mb-2">{{ ruta.origen }} -> {{ ruta.destino }}</h2>
+      <p class="text-muted mb-3">
+        Fecha {{ ruta.fecha|date:"d/m/Y" }} a las {{ ruta.hora_salida|time:"H:i" }} hrs - Valor ${{ ruta.precio }}
+      </p>
+      <div class="map-container" id="map" style="height: 360px;"></div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card-lift">
+      <h3 class="mb-2">Selecciona tus asientos</h3>
+      <p class="text-muted">Haz clic sobre los asientos disponibles. Puedes elegir mas de uno en la misma reserva.</p>
+
+      <form method="post" id="reservaForm">
+        {% csrf_token %}
+        {{ form.asientos }}
+        {% if form.asientos.errors %}
+          <div class="invalid-feedback d-block">{{ form.asientos.errors.0 }}</div>
+        {% endif %}
+
+        <div id="seatGrid" class="seat-grid mt-3" data-total="{{ total_asientos }}" data-ocupados="{{ ocupados|join:',' }}"></div>
+
+        <div class="d-flex justify-content-between align-items-center mt-4">
+          <small class="text-muted" id="seatSummary">No has seleccionado asientos.</small>
+          <button type="submit" class="btn btn-primary" id="submitReserva" disabled>Confirmar reserva</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
+<script>
+(function() {
+  const map = L.map("map").setView([-33.45, -70.65], 6);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "&copy; OpenStreetMap",
+  }).addTo(map);
+
+  const origen = "{{ ruta.origen }}";
+  const destino = "{{ ruta.destino }}";
+
+  Promise.all([
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(origen)}+Chile`).then(res => res.json()),
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(destino)}+Chile`).then(res => res.json()),
+  ]).then(([origenData, destinoData]) => {
+    if (!origenData.length || !destinoData.length) {
+      return;
+    }
+    const origenLatLng = L.latLng(Number(origenData[0].lat), Number(origenData[0].lon));
+    const destinoLatLng = L.latLng(Number(destinoData[0].lat), Number(destinoData[0].lon));
+
+    L.Routing.control({
+      waypoints: [origenLatLng, destinoLatLng],
+      addWaypoints: false,
+      draggableWaypoints: false,
+      routeWhileDragging: false,
+      lineOptions: {
+        styles: [{ color: "#1f6feb", weight: 6 }],
+      },
+      createMarker: function(index, waypoint) {
+        return L.marker(waypoint.latLng).bindPopup(index === 0 ? `Origen: ${origen}` : `Destino: ${destino}`);
+      },
+    }).addTo(map);
+  }).catch(() => {
+    console.warn("No fue posible trazar la ruta en el mapa.");
+  });
+
+  const seatGrid = document.getElementById("seatGrid");
+  const hiddenInput = document.getElementById("id_asientos");
+  const submitButton = document.getElementById("submitReserva");
+  const summary = document.getElementById("seatSummary");
+  const total = Number(seatGrid.dataset.total);
+  const ocupados = seatGrid.dataset.ocupados ? seatGrid.dataset.ocupados.split(",").filter(Boolean).map(Number) : [];
+
+  seatGrid.innerHTML = "";
+
+  const seatLabels = new Map();
+  const seleccionados = new Set();
+  const asientosPorFila = 4;
+
+  const distribucionPisos = [];
+  if (total <= 20) {
+    distribucionPisos.push(total);
+  } else {
+    const pisoUno = Math.min(12, total);
+    distribucionPisos.push(pisoUno);
+    if (total - pisoUno > 0) {
+      distribucionPisos.push(total - pisoUno);
+    }
+  }
+
+  let siguienteAsiento = 1;
+
+  distribucionPisos.forEach((cantidadEnPiso, indicePiso) => {
+    if (cantidadEnPiso <= 0) {
+      return;
+    }
+
+    const seccionPiso = document.createElement("section");
+    seccionPiso.classList.add("deck");
+
+    const tituloPiso = document.createElement("h4");
+    tituloPiso.classList.add("deck-title");
+    tituloPiso.textContent = `Piso ${indicePiso + 1}`;
+    seccionPiso.appendChild(tituloPiso);
+
+    const cuerpoPiso = document.createElement("div");
+    cuerpoPiso.classList.add("deck-body");
+    seccionPiso.appendChild(cuerpoPiso);
+
+    const filas = Math.ceil(cantidadEnPiso / asientosPorFila);
+    let asientoEnPiso = 1;
+    let asientosRestantes = cantidadEnPiso;
+
+    for (let fila = 0; fila < filas; fila++) {
+      const filaWrap = document.createElement("div");
+      filaWrap.classList.add("seat-row");
+
+      for (let posicion = 0; posicion < asientosPorFila; posicion++) {
+        if (posicion === 2) {
+          const pasillo = document.createElement("div");
+          pasillo.classList.add("aisle");
+          filaWrap.appendChild(pasillo);
+        }
+
+        if (asientosRestantes <= 0) {
+          filaWrap.appendChild(createPlaceholder());
+          continue;
+        }
+
+        const numeroAsiento = siguienteAsiento++;
+        const etiqueta = `P${indicePiso + 1}-${String(asientoEnPiso).padStart(2, "0")}`;
+        asientoEnPiso += 1;
+        asientosRestantes -= 1;
+        seatLabels.set(numeroAsiento, etiqueta);
+
+        const boton = document.createElement("button");
+        boton.type = "button";
+        boton.classList.add("seat-cell", "available");
+        boton.dataset.seatNumber = numeroAsiento;
+        boton.dataset.seatLabel = etiqueta;
+        boton.setAttribute("aria-label", `Asiento ${etiqueta}`);
+        boton.innerHTML = `
+          <span class="seat-icon">
+            <span class="seat-head"></span>
+            <span class="seat-back"></span>
+            <span class="seat-base"></span>
+          </span>
+          <span class="seat-number">${etiqueta}</span>
+        `;
+
+        if (ocupados.includes(numeroAsiento)) {
+          boton.classList.remove("available");
+          boton.classList.add("occupied");
+          boton.disabled = true;
+        } else {
+          boton.addEventListener("click", () => toggleSeat(boton, numeroAsiento));
+        }
+
+        filaWrap.appendChild(boton);
+      }
+
+      cuerpoPiso.appendChild(filaWrap);
+    }
+
+    seatGrid.appendChild(seccionPiso);
+  });
+
+  function createPlaceholder() {
+    const placeholder = document.createElement("div");
+    placeholder.classList.add("seat-placeholder");
+    return placeholder;
+  }
+
+  function toggleSeat(element, numero) {
+    if (element.classList.contains("selected")) {
+      element.classList.remove("selected");
+      element.classList.add("available");
+      seleccionados.delete(numero);
+    } else {
+      element.classList.add("selected");
+      element.classList.remove("available");
+      seleccionados.add(numero);
+    }
+
+    const valores = Array.from(seleccionados).sort((a, b) => a - b);
+    hiddenInput.value = valores.join(",");
+    submitButton.disabled = valores.length === 0;
+
+    const etiquetas = valores.map((valor) => seatLabels.get(valor) || valor);
+    summary.textContent = etiquetas.length
+      ? `Asientos seleccionados: ${etiquetas.join(", ")}`
+      : "No has seleccionado asientos.";
+
+    element.setAttribute("aria-pressed", element.classList.contains("selected") ? "true" : "false");
+  }
+})();
+</script>
+{% endblock %}

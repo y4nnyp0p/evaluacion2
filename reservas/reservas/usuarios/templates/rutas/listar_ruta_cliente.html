@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Rutas disponibles{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="section-title mb-1">Explora y reserva</h2>
+    <p class="section-subtitle mb-0">Filtra por origen, destino o fecha para encontrar tu proximo viaje.</p>
+  </div>
+  <a href="{% url 'mis_reservas' %}" class="btn btn-outline-primary">Ver mis reservas</a>
+</div>
+
+<form method="get" class="filter-bar">
+  <div class="row g-3">
+    <div class="col-md-4">
+      <label class="form-label">Origen</label>
+      <select name="origen" class="form-select">
+        <option value="">Todos</option>
+        {% for opcion in origenes %}
+          <option value="{{ opcion }}" {% if opcion == origen %}selected{% endif %}>{{ opcion }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Destino</label>
+      <select name="destino" class="form-select">
+        <option value="">Todos</option>
+        {% for opcion in origenes %}
+          <option value="{{ opcion }}" {% if opcion == destino %}selected{% endif %}>{{ opcion }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Fecha</label>
+      <input type="date" name="fecha" class="form-control" value="{{ fecha }}">
+    </div>
+    <div class="col-md-1 d-flex align-items-end">
+      <button type="submit" class="btn btn-primary w-100">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </div>
+</form>
+
+<div class="row g-4">
+  {% for ruta in rutas %}
+    <div class="col-md-4">
+      <div class="card-lift h-100">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="badge bg-primary-subtle text-primary">{{ ruta.fecha|date:"d/m/Y" }}</span>
+          <span class="text-muted">{{ ruta.hora_salida|time:"H:i" }} hrs</span>
+        </div>
+        <h5 class="mb-2">{{ ruta.origen }} -> {{ ruta.destino }}</h5>
+        <p class="text-muted mb-3">Valor referencial ${{ ruta.precio }}</p>
+        <a href="{% url 'reservar_ruta' ruta.pk %}" class="btn btn-sm btn-primary">Reservar asiento</a>
+      </div>
+    </div>
+  {% empty %}
+    <div class="col-12">
+      <div class="card-lift text-center">
+        <h5>Sin resultados para la busqueda seleccionada.</h5>
+        <p class="text-muted mb-0">Ajusta los filtros o vuelve a intentarlo mas tarde.</p>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

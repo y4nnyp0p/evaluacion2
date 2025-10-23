@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Panel cliente{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="card-lift h-100">
+      <h2 class="mb-3">Hola {{ request.user.first_name|default:request.user.username }}</h2>
+      <p class="text-muted mb-4">
+        Gestiona tus reservas y descubre nuevas rutas disponibles. Siempre puedes revisar el detalle de tus viajes desde esta seccion.
+      </p>
+      <div class="d-grid gap-2">
+        <a href="{% url 'listar_rutas_cliente' %}" class="btn btn-primary">Buscar nuevas rutas</a>
+        <a href="{% url 'mis_reservas' %}" class="btn btn-outline-primary">Ver mis reservas</a>
+      </div>
+      <div class="mt-4">
+        <div class="text-muted small text-uppercase mb-1">Resumen rapido</div>
+        <ul class="list-unstyled mb-0">
+          <li class="mb-2"><i class="bi bi-ticket-perforated me-2 text-primary"></i>Reservas recientes: {{ reservas|length }}</li>
+          <li><i class="bi bi-calendar-week me-2 text-primary"></i>Capacidad por bus: {{ total_asientos }} asientos</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card-lift h-100">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Reservas recientes</h5>
+        <a href="{% url 'mis_reservas' %}" class="small text-primary">Ver todas</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead>
+            <tr>
+              <th>Ruta</th>
+              <th>Asiento</th>
+              <th>Fecha reserva</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in reservas %}
+              <tr>
+                <td>
+                  <div class="fw-semibold">{{ item.ruta.origen }} -> {{ item.ruta.destino }}</div>
+                  <small class="text-muted">{{ item.ruta.fecha|date:"d/m/Y" }} - {{ item.ruta.hora_salida|time:"H:i" }} hrs</small>
+                </td>
+                <td>
+                  <span class="badge bg-primary-subtle text-primary">Asiento {{ item.asiento }}</span>
+                </td>
+                <td>{{ item.fecha_reserva|date:"d/m/Y H:i" }}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="3" class="text-center text-muted py-4">
+                  Aun no tienes reservas. Explora las rutas disponibles para comenzar.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mt-5">
+  <h3 class="section-title">Proximas rutas sugeridas</h3>
+  <p class="section-subtitle">Una seleccion de rutas activas para los proximos dias.</p>
+  <div class="row g-4">
+    {% for ruta in proximas_rutas %}
+      <div class="col-md-4">
+        <div class="card-lift h-100">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="badge bg-primary-subtle text-primary">{{ ruta.fecha|date:"d/m/Y" }}</span>
+            <span class="text-muted">{{ ruta.hora_salida|time:"H:i" }}</span>
+          </div>
+          <h6 class="mb-1">{{ ruta.origen }} -> {{ ruta.destino }}</h6>
+          <p class="text-muted mb-3">Valor desde ${{ ruta.precio }}</p>
+          <a href="{% url 'reservar_ruta' ruta.pk %}" class="btn btn-sm btn-primary">Reservar</a>
+        </div>
+      </div>
+    {% empty %}
+      <div class="col-12">
+        <div class="card-lift text-center">
+          <h5>No hay rutas sugeridas en este momento.</h5>
+          <p class="text-muted mb-0">Vuelve mas tarde o revisa el catalogo completo.</p>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Inicio{% endblock %}
+
+{% block content %}
+<div class="hero-card mb-5">
+  <div class="row align-items-center g-4">
+    <div class="col-lg-7">
+      <h1 class="hero-title">Planifica tu proximo viaje con total confianza</h1>
+      <p class="mb-4">
+        Gestiona reservas, selecciona tus asientos y recibe confirmaciones al instante.
+        Una experiencia pensada para pasajeros y administradores.
+      </p>
+      <div class="hero-actions">
+        <a href="{% url 'rutas_disponibles' %}" class="btn btn-light me-2">Ver rutas disponibles</a>
+        <a href="{% url 'ingreso_modal' %}" class="btn btn-outline-light">Crear cuenta</a>
+      </div>
+    </div>
+    <div class="col-lg-5 text-lg-end">
+      <div class="bg-white bg-opacity-10 rounded-4 p-4">
+        <h5 class="mb-3">Cobertura nacional</h5>
+        <ul class="list-unstyled mb-0">
+          {% for origen in origenes %}
+            <li class="mb-2"><i class="bi bi-geo-alt-fill me-2"></i>{{ origen }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section class="mb-5">
+  <h2 class="section-title">Por que elegir ReserAPP</h2>
+  <p class="section-subtitle">Tecnologia, puntualidad y atencion personalizada para cada pasajero.</p>
+  <div class="row g-4">
+    <div class="col-md-4">
+      <div class="card-lift">
+        <div class="mb-3">
+          <i class="bi bi-shield-lock fs-2 text-primary"></i>
+        </div>
+        <h5>Procesos seguros</h5>
+        <p class="text-muted mb-0">Autenticacion segura, control de asientos y registro detallado de cada reserva.</p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card-lift">
+        <div class="mb-3">
+          <i class="bi bi-bus-front fs-2 text-primary"></i>
+        </div>
+        <h5>Rutas optimizadas</h5>
+        <p class="text-muted mb-0">Visualiza las rutas disponibles con informacion clara de fechas, horarios y tarifas.</p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card-lift">
+        <div class="mb-3">
+          <i class="bi bi-people fs-2 text-primary"></i>
+        </div>
+        <h5>Experiencia centrada en el pasajero</h5>
+        <p class="text-muted mb-0">Interfaz simple y elegante para reservar en minutos desde cualquier dispositivo.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2 class="section-title">Rutas destacadas</h2>
+  <p class="section-subtitle">Las rutas con mayor demanda para esta semana.</p>
+  <div class="row g-4">
+    {% for ruta in rutas_destacadas %}
+      <div class="col-md-4">
+        <div class="card-lift h-100">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="badge bg-primary-subtle text-primary">{{ ruta.fecha|date:"d/m/Y" }}</span>
+            <span class="text-muted">{{ ruta.hora_salida|time:"H:i" }} hrs</span>
+          </div>
+          <h5 class="mb-2">{{ ruta.origen }} -> {{ ruta.destino }}</h5>
+          <p class="text-muted mb-4">Valor referencial: ${{ ruta.precio }}</p>
+          <a href="{% url 'ingreso_modal' %}" class="btn btn-sm btn-outline-primary">Reservar ahora</a>
+        </div>
+      </div>
+    {% empty %}
+      <div class="col-12">
+        <div class="card-lift text-center">
+          <h5>No hay rutas destacadas disponibles.</h5>
+          <p class="text-muted mb-0">Registra una nueva ruta desde el panel de administracion.</p>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

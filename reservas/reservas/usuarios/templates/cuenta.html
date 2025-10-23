@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Gestionar cuenta{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center g-4">
+    <div class="col-lg-5">
+      <div class="card-lift h-100">
+        <h2 class="mb-3">Ingresar</h2>
+        <p class="text-muted">Accede con tu usuario o correo registrado.</p>
+        <form method="post" action="{% url 'ingreso_modal' %}">
+          {% csrf_token %}
+          <input type="hidden" name="accion" value="ingresar">
+          {% if ingreso_form.non_field_errors %}
+            <div class="alert alert-danger">{{ ingreso_form.non_field_errors.0 }}</div>
+          {% endif %}
+          {% for field in ingreso_form %}
+            <div class="mb-3">
+              <label class="form-label">{{ field.label }}</label>
+              {{ field }}
+              {% if field.errors %}
+                <div class="invalid-feedback d-block">{{ field.errors.0 }}</div>
+              {% endif %}
+            </div>
+          {% endfor %}
+          <button type="submit" class="btn btn-primary w-100">Ingresar al sistema</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="card-lift h-100">
+        <h2 class="mb-3">Crear cuenta</h2>
+        <p class="text-muted">Registrate para reservar tus proximos viajes.</p>
+        <form method="post" action="{% url 'ingreso_modal' %}">
+          {% csrf_token %}
+          <input type="hidden" name="accion" value="registrar">
+          {% if registro_form.non_field_errors %}
+            <div class="alert alert-danger">{{ registro_form.non_field_errors.0 }}</div>
+          {% endif %}
+          {% for field in registro_form %}
+            <div class="mb-3">
+              <label class="form-label">{{ field.label }}</label>
+              {{ field }}
+              {% if field.errors %}
+                <div class="invalid-feedback d-block">{{ field.errors.0 }}</div>
+              {% endif %}
+            </div>
+          {% endfor %}
+          <button type="submit" class="btn btn-outline-primary w-100">Crear cuenta</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Panel administracion{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+  <div class="col-md-4">
+    <div class="card-lift text-center">
+      <div class="mb-2 text-muted text-uppercase small">Usuarios registrados</div>
+      <h2 class="mb-0">{{ total_usuarios }}</h2>
+      <p class="text-muted mb-0">Incluye administradores y clientes activos.</p>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card-lift text-center">
+      <div class="mb-2 text-muted text-uppercase small">Rutas habilitadas</div>
+      <h2 class="mb-0">{{ total_rutas }}</h2>
+      <p class="text-muted mb-0">Rutas disponibles para programacion y reservas.</p>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card-lift text-center">
+      <div class="mb-2 text-muted text-uppercase small">Reservas totales</div>
+      <h2 class="mb-0">{{ total_reservas }}</h2>
+      <p class="text-muted mb-0">Historico acumulado de reservas confirmadas.</p>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="card-lift">
+      <h5 class="mb-3">Reservas por mes</h5>
+      <canvas id="chartReservas" height="200"></canvas>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card-lift">
+      <h5 class="mb-3">Rutas con mayor demanda</h5>
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead>
+            <tr>
+              <th>Ruta</th>
+              <th class="text-center">Reservas</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for ruta in rutas_top %}
+              <tr>
+                <td>
+                  <div class="fw-semibold">{{ ruta.origen }} -> {{ ruta.destino }}</div>
+                  <small class="text-muted">{{ ruta.fecha|date:"d/m/Y" }} - {{ ruta.hora_salida|time:"H:i" }}</small>
+                </td>
+                <td class="text-center">
+                  <span class="badge bg-primary-subtle text-primary">{{ ruta.total }}</span>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="2" class="text-center text-muted py-4">
+                  Aun no hay reservas registradas.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script id="chart-labels" type="application/json">{{ chart_labels_json|safe }}</script>
+<script id="chart-data" type="application/json">{{ chart_data_json|safe }}</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+const labels = JSON.parse(document.getElementById("chart-labels").textContent || "[]");
+const data = JSON.parse(document.getElementById("chart-data").textContent || "[]");
+
+const ctx = document.getElementById("chartReservas");
+if (ctx) {
+  new Chart(ctx, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [{
+        label: "Reservas",
+        data,
+        fill: true,
+        borderColor: "#1f6feb",
+        backgroundColor: "rgba(31, 111, 235, 0.15)",
+        tension: 0.35,
+        borderWidth: 3,
+        pointRadius: 4,
+        pointBackgroundColor: "#1f6feb",
+      }],
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1 } },
+      },
+    },
+  });
+}
+</script>
+{% endblock %}
